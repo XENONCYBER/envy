@@ -118,6 +118,13 @@ get_latest_version() {
         
         # Get release info and check for assets
         RELEASE_INFO=$(curl -fsSL "${LATEST_URL}")
+        
+        # Handle GitHub API errors (like rate limiting or 404s that slip through)
+        if echo "${RELEASE_INFO}" | grep -q "Not Found"; then
+             echo "none"
+             return
+        fi
+
         VERSION=$(echo "${RELEASE_INFO}" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
         ASSETS_COUNT=$(echo "${RELEASE_INFO}" | grep '"assets"' -A 10 | grep '\[' -A 10 | grep -c 'name' || echo "0")
         
@@ -127,7 +134,9 @@ get_latest_version() {
             return
         fi
     else
-        error "curl is required to fetch the latest version"
+        # If curl is missing, we can't check releases, so we try build
+        echo "none"
+        return
     fi
 
     if [ -z "${VERSION}" ]; then

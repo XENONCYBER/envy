@@ -35,19 +35,13 @@ A secure encrypted vault for managing API keys, secrets, and environment variabl
 
 ## Installation
 
-### Quick Install (curl)
+### Quick Install (recommended)
 
 Install the latest binary with one command:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/XENONCYBER/envy/main/install.sh | sh
 ```
-
-This script:
-- Detects your OS and architecture
-- Downloads the latest release from GitHub
-- Verifies checksums when available
-- Installs to `/usr/local/bin/envy`
 
 ### Build from Source
 
@@ -65,22 +59,6 @@ Or build and run locally:
 ```bash
 go run ./cmd/main.go --help
 ```
-
-### Package Managers
-
-**Homebrew (macOS/Linux):**
-```bash
-brew tap XENONCYBER/envy
-brew install envy
-```
-
-**AUR (Arch Linux):**
-```bash
-yay -S envy-bin
-```
-
-**DEB/RPM packages:**
-Download from [GitHub Releases](https://github.com/XENONCYBER/envy/releases)
 
 ### Upgrading Envy
 
@@ -104,11 +82,11 @@ You will be prompted to create a master password. This password encrypts all you
 
 **Get started immediately:**
 
-1. **Import existing secrets:** `envy --import path/to/.env`
-2. **Launch TUI:** `envy`  
+1. **Import existing secrets:** `envy --import path/to/.env` or `envy -i path/to/.env`
+2. **Launch TUI:** `envy`
 3. **Search and copy secrets:** Type to search, press `y` to copy
 
-Your encrypted vault is stored at `~/.envy.json` with secure file permissions.
+Your encrypted vault is stored at `~/.envy/.envy.json` with secure file permissions.
 
 ## Usage
 
@@ -120,40 +98,10 @@ Launch the interactive interface:
 envy
 ```
 
-**Navigation:**
-- `h,j,k,l` or arrow keys to navigate
-- `i` to search/fuzzy find
-- `Enter` to view project details
-- `y` to copy secret to clipboard (auto-clears in 30s)
-- `Ctrl+n` to create new project
-- `Ctrl+e` to edit secret
-- `Ctrl+d` to delete secret
-- `Ctrl+r` to refresh/reload
-- `q` to quit
-
 **Search Syntax:**
 - Fuzzy matching: type partial names like `api` for `API_KEY`
 - Exact match: wrap in quotes `"API_KEY"`
 - Filter by project: `project:prod api`
-
-### CLI Commands
-
-```bash
-# List all projects
-envy list
-
-# Show project secrets
-envy show PROJECT_NAME
-
-# Copy specific secret
-envy copy PROJECT_NAME SECRET_NAME
-
-# Create new project
-envy create PROJECT_NAME
-
-# Delete project
-envy delete PROJECT_NAME
-```
 
 ### Import/Export
 
@@ -171,32 +119,11 @@ envy --export project-name
 envy --export project-name --output path/to/.env
 ```
 
-**Export all projects:**
-```bash
-envy --export-all --output backup/
-```
-
 ## Configuration
-
-### Environment Variables
-
-```bash
-# Custom vault location
-export ENVY_VAULT_PATH="/path/to/custom/vault.json"
-
-# Default clipboard timeout (seconds)
-export ENVY_CLIPBOARD_TIMEOUT=30
-
-# Disable clipboard auto-clear
-export ENVY_NO_CLIPBOARD_CLEAR=1
-
-# Enable debug mode
-export ENVY_DEBUG=1
-```
 
 ### Key Bindings
 
-Customize key bindings in `~/.envy/config.lua`:
+Customize key bindings in `~/.config/envy/config.lua`:
 
 ```lua
 return {
@@ -221,34 +148,7 @@ return {
 - **Clipboard:** Auto-clears after 30 seconds by default
 - **Memory:** Secrets cleared from memory after use
 
-**Security Best Practices:**
-- Never commit `.envy.json` to version control
-- Use a strong master password (12+ characters recommended)
-- Keep regular backups of your encrypted vault
-- Exported .env files are plain text - handle with care
-- Consider using a password manager for your master password
-
 ## Advanced Topics
-
-### Shell Integration
-
-Add to your shell for quick secret access:
-
-**Bash/Zsh:**
-```bash
-# Add to ~/.bashrc or ~/.zshrc
-envy_completion() {
-    local projects=$(envy list 2>/dev/null | tr '\n' ' ')
-    COMPREPLY=($(compgen -W "$projects" -- "${COMP_WORDS[1]}"))
-}
-complete -F envy_completion envy
-```
-
-**Fish:**
-```fish
-# Add to ~/.config/fish/completions/envy.fish
-complete -c envy -f -a "(envy list)"
-```
 
 ### Backup and Recovery
 
@@ -263,13 +163,11 @@ cp ~/.envy.json ~/.envy.backup.$(date +%Y%m%d)
 BACKUP_DIR="$HOME/envy-backups"
 mkdir -p "$BACKUP_DIR"
 cp ~/.envy.json "$BACKUP_DIR/envy-$(date +%Y%m%d-%H%M%S).json"
-# Keep only last 30 backups
 ls -t "$BACKUP_DIR"/envy-*.json | tail -n +31 | xargs rm -f
 ```
 
 **Recovery:**
 ```bash
-# Restore from backup
 cp ~/.envy.backup.20240101 ~/.envy.json
 ```
 
@@ -305,9 +203,6 @@ go build -ldflags "-X main.version=$(git describe --tags)" -o envy ./cmd/main.go
 ```bash
 # Run from source
 go run ./cmd/main.go
-
-# Run with debug
-ENVY_DEBUG=1 go run ./cmd/main.go
 ```
 
 ### Testing
