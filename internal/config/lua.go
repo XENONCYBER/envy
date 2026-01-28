@@ -4,6 +4,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 
 	lua "github.com/yuin/gopher-lua"
 )
@@ -23,10 +24,9 @@ type BackendConfig struct {
 }
 
 func DefaultBackendConfig() BackendConfig {
-	home, _ := os.UserHomeDir()
 	return BackendConfig{
-		KeysPath: filepath.Join(home, ".envy", "keys.json"),
-		LockPath: filepath.Join(home, ".envy", ".lock"),
+		KeysPath: GetDefaultKeysPath(),
+		LockPath: GetDefaultLockPath(),
 	}
 }
 
@@ -39,12 +39,11 @@ func DefaultAppConfig() AppConfig {
 }
 
 func GetConfigDir() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".config", "envy")
+	return GetDefaultConfigDir()
 }
 
 func GetLuaConfigPath() string {
-	return filepath.Join(GetConfigDir(), "config.lua")
+	return GetDefaultConfigPath()
 }
 
 func LoadAppConfig() AppConfig {
@@ -75,7 +74,17 @@ func registerConfigFunctions(L *lua.LState) {
 	// Register envy module
 	envyMod := L.NewTable()
 
-	L.SetField(envyMod, "home", lua.LString(os.Getenv("HOME")))
+	// Expose home directory (cross-platform)
+	home, _ := os.UserHomeDir()
+	L.SetField(envyMod, "home", lua.LString(home))
+
+	// Expose OS name for conditional config
+	L.SetField(envyMod, "os", lua.LString(runtime.GOOS))
+
+	// Expose default paths so users can reference them
+	L.SetField(envyMod, "default_data_dir", lua.LString(GetDefaultDataDir()))
+	L.SetField(envyMod, "default_config_dir", lua.LString(GetDefaultConfigDir()))
+	L.SetField(envyMod, "default_keys_path", lua.LString(GetDefaultKeysPath()))
 
 	// Helper function to expand ~ in paths
 	L.SetField(envyMod, "expand_path", L.NewFunction(func(L *lua.LState) int {

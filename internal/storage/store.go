@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"envy/internal/config"
 	"envy/internal/crypto"
@@ -25,94 +24,24 @@ func SetConfig(cfg config.BackendConfig) {
 	storeConfig = cfg
 }
 
-type FileLock struct {
-	file *os.File
-	path string
-}
-
-func getLockPath() (string, error) {
+func getLockPath() string {
 	if storeConfig.LockPath != "" {
-		return storeConfig.LockPath, nil
+		return storeConfig.LockPath
 	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
-	}
-	return filepath.Join(home, ".envy", ".lock"), nil
+	return config.GetDefaultLockPath()
 }
 
-func AcquireLock() (*FileLock, error) {
-	lockPath, err := getLockPath()
-	if err != nil {
-		return nil, err
-	}
-
-	file, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o600)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open lock file: %w", err)
-	}
-
-	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_EX); err != nil {
-		file.Close()
-		return nil, fmt.Errorf("failed to acquire lock: %w", err)
-	}
-
-	return &FileLock{file: file, path: lockPath}, nil
-}
-
-func TryAcquireLock() (*FileLock, error) {
-	lockPath, err := getLockPath()
-	if err != nil {
-		return nil, err
-	}
-
-	file, err := os.OpenFile(lockPath, os.O_CREATE|os.O_RDWR, 0o600)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open lock file: %w", err)
-	}
-
-	if err := syscall.Flock(int(file.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
-		file.Close()
-		if err == syscall.EWOULDBLOCK {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to acquire lock: %w", err)
-	}
-
-	return &FileLock{file: file, path: lockPath}, nil
-}
-
-func (l *FileLock) Release() error {
-	if l == nil || l.file == nil {
-		return nil
-	}
-
-	if err := syscall.Flock(int(l.file.Fd()), syscall.LOCK_UN); err != nil {
-		l.file.Close()
-		return fmt.Errorf("failed to release lock: %w", err)
-	}
-
-	return l.file.Close()
-}
-
-func getStorePath() (string, error) {
+func getStorePath() string {
 	if storeConfig.KeysPath != "" {
-		return storeConfig.KeysPath, nil
+		return storeConfig.KeysPath
 	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
-	}
-	return filepath.Join(home, ".envy", "keys.json"), nil
+	return config.GetDefaultKeysPath()
 }
 
 func IsFirstRun() (bool, error) {
-	path, err := getStorePath()
-	if err != nil {
-		return false, err
-	}
+	path := getStorePath()
 
-	_, err = os.Stat(path)
+	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return true, nil
 	}
@@ -139,10 +68,7 @@ func Initialize(password string) error {
 		Projects: []domain.Project{},
 	}
 
-	path, err := getStorePath()
-	if err != nil {
-		return err
-	}
+	path := getStorePath()
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return fmt.Errorf("failed to create data directory: %w", err)
 	}
@@ -151,7 +77,13 @@ func Initialize(password string) error {
 }
 
 func saveStore(store domain.Store) error {
-	lock, err := AcquireLock()
+	lockPath := getLockPath()
+	// Ensure the lock directory exists
+	if err := os.MkdirAll(filepath.Dir(lockPath), 0o700); err != nil {
+		return fmt.Errorf("failed to create lock directory: %w", err)
+	}
+
+	lock, err := AcquireLock(lockPath)
 	if err != nil {
 		return fmt.Errorf("failed to acquire lock: %w", err)
 	}
@@ -160,10 +92,7 @@ func saveStore(store domain.Store) error {
 }
 
 func Load(password string) ([]domain.Project, []byte, error) {
-	path, err := getStorePath()
-	if err != nil {
-		return nil, nil, err
-	}
+	path := getStorePath()
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -198,16 +127,19 @@ func Load(password string) ([]domain.Project, []byte, error) {
 }
 
 func Save(projects []domain.Project, key []byte) error {
-	lock, err := AcquireLock()
+	lockPath := getLockPath()
+	// Ensure the lock directory exists
+	if err := os.MkdirAll(filepath.Dir(lockPath), 0o700); err != nil {
+		return fmt.Errorf("failed to create lock directory: %w", err)
+	}
+
+	lock, err := AcquireLock(lockPath)
 	if err != nil {
 		return fmt.Errorf("failed to acquire lock: %w", err)
 	}
 	defer lock.Release()
 
-	path, err := getStorePath()
-	if err != nil {
-		return err
-	}
+	path := getStorePath()
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -333,10 +265,7 @@ func decryptSecrets(projects []domain.Project, key []byte) ([]domain.Project, er
 }
 
 func saveStoreUnlocked(store domain.Store) error {
-	path, err := getStorePath()
-	if err != nil {
-		return err
-	}
+	path := getStorePath()
 
 	storeJSON, err := json.MarshalIndent(store, "", "  ")
 	if err != nil {
@@ -358,10 +287,7 @@ func saveStoreUnlocked(store domain.Store) error {
 }
 
 func CreateBackup() error {
-	path, err := getStorePath()
-	if err != nil {
-		return err
-	}
+	path := getStorePath()
 
 	data, err := os.ReadFile(path)
 	if err != nil {
