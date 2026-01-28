@@ -115,12 +115,12 @@ get_latest_version() {
             echo "none"
             return
         fi
-
+        
         # Get release info and check for assets
         RELEASE_INFO=$(curl -fsSL "${LATEST_URL}")
         VERSION=$(echo "${RELEASE_INFO}" | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
         ASSETS_COUNT=$(echo "${RELEASE_INFO}" | grep '"assets"' -A 10 | grep '\[' -A 10 | grep -c 'name' || echo "0")
-
+        
         # If no assets available, return "none" to trigger build from source
         if [ "${ASSETS_COUNT}" = "0" ]; then
             echo "none"
@@ -142,37 +142,37 @@ get_latest_version() {
 build_from_source() {
     TMP_DIR="$1"
     info "No pre-built binaries available. Building from source..."
-
+    
     # Check if Go is installed
     if ! command -v go >/dev/null 2>&1; then
         error "Go is required to build from source. Please install Go first:"
         info "  https://go.dev/doc/install"
     fi
-
+    
     # Check Go version
     GO_VERSION=$(go version 2>/dev/null | awk '{print $3}' | sed 's/go//')
     if [ -n "${GO_VERSION}" ]; then
         info "Using Go ${GO_VERSION}"
     fi
-
+    
     # Clone repository
     info "Cloning source code..."
     if ! git clone --depth 1 https://github.com/${REPO}.git "${TMP_DIR}"; then
         error "Failed to clone repository"
     fi
-
+    
     # Build
     info "Building binary..."
     cd "${TMP_DIR}"
-
+    
     # Run the build
     if ! go build -ldflags="-s -w" -o "${BINARY_NAME}" ./cmd/main.go; then
         error "Build failed"
     fi
-
+    
     # Make executable
     chmod +x "${BINARY_NAME}"
-
+    
     cd - >/dev/null
 }
 
@@ -314,11 +314,11 @@ main() {
     # Get latest version
     info "Fetching latest version..."
     VERSION=$(get_latest_version)
-
+    
     # Create a single temporary directory for either build or download
     TMP_DIR=$(mktemp -d)
     trap "rm -rf ${TMP_DIR}" EXIT
-
+    
     if [ "${VERSION}" = "none" ]; then
         warn "No pre-built binaries found"
         # Build from source instead
