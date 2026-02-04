@@ -1,235 +1,118 @@
-# Envy
+<p align="center">
+  <img src="docs/logo.png" alt="Envy Logo" width="400">
+</p>
 
-A secure encrypted vault for managing API keys, secrets, and environment variables with CLI and TUI interfaces. Envy implements a "fuzzy" matching algorithm for quick secret retrieval and provides military-grade encryption to protect your sensitive data.
+<p align="center">
+  <a href="#quick-start">Quick Start</a> •
+  <a href="docs/configuration/lua-config.md">Configuration</a> •
+  <a href="docs/usage/cli-commands.md">Commands</a> •
+  <a href="docs/configuration/keybindings.md">Keybindings</a> •
+  <a href="docs/troubleshooting/faq.md">FAQ</a> •
+  <a href="DOCUMENTATION.md">Documentation</a>
+</p>
 
-## Highlights
+<p align="center">
+  A secure encrypted vault for managing API keys, secrets, and environment variables. Built for developers who live in the terminal.
+</p>
 
-- **Secure** — AES-256-GCM encryption with Argon2id key derivation
-- **Fast** — Optimized for instant access to thousands of secrets
-- **Portable** — Single binary installation with no external dependencies
-- **Versatile** — CLI and TUI interfaces with shell integration support
-- **All-inclusive** — Import/export .env files, version history, and multi-environment support
+## What is Envy?
 
-## Table of Contents
+I built Envy because I was tired of juggling .env files and keeping secrets scattered across password managers, sticky notes, and Slack threads. It's a single binary that gives you both a slick TUI for browsing secrets and a CLI for automation.
 
-- [Installation](#installation)
-  - [Quick Install (curl)](#quick-install-curl)
-  - [Build from Source](#build-from-source)
-  - [Package Managers](#package-managers)
-  - [Upgrading Envy](#upgrading-envy)
-- [Quick Start](#quick-start)
-- [Usage](#usage)
-  - [TUI Mode](#tui-mode)
-  - [CLI Commands](#cli-commands)
-  - [Import/Export](#importexport)
-- [Configuration](#configuration)
-  - [Environment Variables](#environment-variables)
-  - [Key Bindings](#key-bindings)
-- [Security](#security)
-- [Advanced Topics](#advanced-topics)
-  - [Shell Integration](#shell-integration)
-  - [Backup and Recovery](#backup-and-recovery)
-  - [Performance Tips](#performance-tips)
-- [Development](#development)
-- [License](#license)
+Here's what you get:
 
-## Installation
+- **Real encryption** — AES-256-GCM with Argon2id, not just base64 obfuscation
+- **Fast access** — Fuzzy search finds secrets in milliseconds
+- **Organized by project** — Group related secrets together
+- **Multiple environments** — Keep dev, stage, and prod separate
+- **Version history** — See what changed and when
+- **Import/export** — Bring in your existing .env files
 
-### Quick Install (recommended)
-##### Linux / macOS / Windows
-Install the latest binary with one command:
+## Quick Install
+
+One command:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/XENONCYBER/envy/main/install.sh | sh
 ```
 
-### Build from Source
-
-If you have Go 1.25+ installed:
-
+Or build from source:
 ```bash
-git clone https://github.com/XENONCYBER/envy.git
-cd envy
+git clone https://github.com/XENONCYBER/envy.git && cd envy
 go build -o envy ./cmd/main.go
-sudo mv envy /usr/local/bin/
 ```
-
-Or build and run locally:
-
-```bash
-go run ./cmd/main.go --help
-```
-
-From Releases:
-- Download precompiled binaries from releases. 
-- Add binary to path.
-
-### Upgrading Envy
-
-To upgrade to the latest version:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/XENONCYBER/envy/main/install.sh | sh
-```
-
-The installer will automatically replace your existing installation.
 
 ## Quick Start
 
-First run creates a new encrypted vault:
-
 ```bash
+# Create your vault (first run only)
 envy
-```
 
-You will be prompted to create a master password. This password encrypts all your secrets and is never stored, only a salted hash is kept for verification.
+# Import existing .env files
+envy --import .env
 
-**Get started immediately:**
+# Set secrets via CLI
+envy set myproject API_KEY=secret123
 
-1. **Import existing secrets:** `envy --import path/to/.env` or `envy -i path/to/.env`
-2. **Launch TUI:** `envy`
-3. **Search and copy secrets:** Type to search, press `y` to copy
+# Run commands with secrets injected
+envy run myproject -- npm start
 
-Your encrypted vault is stored at `~/.envy/.envy.json` with secure file permissions.
-- **Linux/macOS:** `~/.envy/keys.json`
-- **Windows:** `%APPDATA%\envy\keys.json`
-
-## Usage
-
-### TUI Mode
-
-Launch the interactive interface:
-
-```bash
-envy
-```
-
-**Search Syntax:**
-- Fuzzy matching: type partial names like `api` for `API_KEY`
-- Exact match: wrap in quotes `"API_KEY"`
-- Filter by project: `project:prod api`
-
-### Import/Export
-
-**Import .env file:**
-```bash
-envy --import path/to/.env
-```
-
-**Export to .env file:**
-```bash
-envy --export project-name
-```
-
-## Configuration
-
-### Key Bindings
-
-Customize key bindings in `~/.config/envy/config.lua`:
-
-```lua
-return {
-  keys = {
-    quit = "q",
-    copy = "y",
-    edit = "e",
-    delete = "d",
-    search = "/",
-    create = "n"
-  }
-}
+# Export project to .env file
+envy --export myproject
 ```
 
 ## Security
 
-- **Encryption:** AES-256-GCM with authenticated encryption
-- **Key Derivation:** Argon2id with configurable parameters
-- **Master Password:** Never stored, only salted hash for verification
-- **File Permissions:** Vault stored with 0600 permissions
-- **Atomic Writes:** Prevents data corruption during saves
-- **Clipboard:** Auto-clears after 30 seconds by default
-- **Memory:** Secrets cleared from memory after use
+Your secrets are encrypted with AES-256-GCM. The key is derived from your master password using Argon2id — a memory-hard function designed to resist GPU cracking attempts.
 
-## Advanced Topics
+- Your password is never stored anywhere
+- We only keep a hash to verify it's correct
+- The vault file is useless without your password
+- If you forget your password, your secrets are gone. Period.
 
-### Backup and Recovery
+Read more about [how the encryption works](docs/security/encryption.md).
 
-**Manual backup:**
-```bash
-cp ~/.envy.json ~/.envy.backup.$(date +%Y%m%d)
-```
+## Documentation
 
-**Automated backup script:**
-```bash
-#!/bin/bash
-BACKUP_DIR="$HOME/envy-backups"
-mkdir -p "$BACKUP_DIR"
-cp ~/.envy.json "$BACKUP_DIR/envy-$(date +%Y%m%d-%H%M%S).json"
-ls -t "$BACKUP_DIR"/envy-*.json | tail -n +31 | xargs rm -f
-```
+The full docs live in the [docs/](docs/) folder:
 
-**Recovery:**
-```bash
-cp ~/.envy.backup.20240101 ~/.envy.json
-```
-
-### Performance Tips
-
-- **Large vaults:** Use search filters to narrow results
-- **Frequent access:** Pin commonly used projects
-- **Memory usage:** Vault is loaded on-demand, not kept in memory
-- **Network drives:** Avoid storing vault on network filesystems
+- **[Getting Started](docs/getting-started/)** — Installation, your first vault, basic concepts
+- **[Usage Guide](docs/usage/)** — TUI navigation, CLI commands, workflows
+- **[Configuration](docs/configuration/)** — Lua configuration, themes, keybindings
+- **[Security](docs/security/)** — Encryption details, best practices
+- **[Reference](docs/reference/)** — Command reference
+- **[Troubleshooting](docs/troubleshooting/)** — Common issues, FAQ
+- **[Examples](docs/examples/)** — Real-world workflows
 
 ## Development
 
-### Prerequisites
-
-- Go 1.25.4 or later
-- Make (optional, for build scripts)
-
-### Building
-
 ```bash
+# Prerequisites: Go 1.25.4+
+
+# Clone and build
+git clone https://github.com/XENONCYBER/envy.git
+cd envy
 go build -o envy ./cmd/main.go
 
-make build-all
-```
+# Run tests
+go test ./...
 
-### Running
-
-```bash
+# Run locally
 go run ./cmd/main.go
 ```
 
-### Testing
-
-```bash
-go test ./...
-
-go test -cover ./...
-
-go test ./tests/encryption_test.go
-```
-
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes and add tests
-4. Ensure all tests pass: `make test`
-5. Submit a pull request
+See [Development Guide](docs/development.md) for contribution guidelines.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) for details.
 
-## Related Projects
+## Similar Projects
 
-- [pass](https://www.passwordstore.org/) - Standard unix password manager
-- [gopass](https://www.gopass.pw/) - The slightly more awesome standard unix password manager
-- [vault](https://www.vaultproject.io/) - HashiCorp's secrets management tool
+- [pass](https://www.passwordstore.org/) — The standard Unix password manager
+- [gopass](https://www.gopass.pw/) — A more feature-rich pass implementation
+- [vault](https://www.vaultproject.io/) — HashiCorp's enterprise secrets solution
 
 ---
 
-**Envy** - Secure secret management made simple.  
-[GitHub](https://github.com/XENONCYBER/envy) | [Issues](https://github.com/XENONCYBER/envy/issues) | [Releases](https://github.com/XENONCYBER/envy/releases)
+**[GitHub](https://github.com/XENONCYBER/envy)** · **[Issues](https://github.com/XENONCYBER/envy/issues)** · **[Releases](https://github.com/XENONCYBER/envy/releases)**

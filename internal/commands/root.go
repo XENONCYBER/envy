@@ -81,7 +81,7 @@ func Execute() {
 	// Handle version flag early
 	for _, arg := range os.Args[1:] {
 		if arg == "--version" {
-			fmt.Println("Envy v1.1.0") // TODO: Set actual version from build tags
+			fmt.Println(config.GetFullVersion())
 			os.Exit(0)
 		}
 	}

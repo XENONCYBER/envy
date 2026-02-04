@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"envy/internal/config"
+
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -127,15 +129,28 @@ func (m Model) viewGrid() string {
 	bindings := GridViewBindings(m.keys, m.state)
 	bottomBar := NewBottomBar(m.width, m.state, m.keys, bindings, m.styles)
 
+	versionStyle := lipgloss.NewStyle().
+		Foreground(m.styles.Text).
+		Background(m.styles.Surface1).
+		Padding(0, 1)
+	versionText := versionStyle.Render(config.GetFullVersion())
+
 	contentHeight := m.height - 3 // Reserve 3 lines for bottom bar
 	contentArea := lipgloss.NewStyle().
 		Height(contentHeight).
 		Render(mainContent)
 
+	// Combine version and bottom bar horizontally
+	bottomRow := lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		versionText,
+		bottomBar.Render(),
+	)
+
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		contentArea,
-		bottomBar.Render(),
+		bottomRow,
 	)
 }
 
@@ -287,7 +302,9 @@ func (m Model) renderEditSidebar(width, height int) string {
 		keyName = m.activeProject.Keys[m.detailCursor].Key
 	}
 
-	subtext := m.styles.DimStyle.Render(" Editing: " + keyName)
+	subtext := lipgloss.NewStyle().
+		Foreground(m.styles.Text).
+		Render(" Editing: " + lipgloss.NewStyle().Bold(true).Foreground(m.styles.Accent).Render(keyName))
 
 	inputBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
@@ -328,54 +345,63 @@ func (m Model) renderHistorySidebar(width, height int) string {
 		apiKey := m.activeProject.Keys[m.historyKeyIdx]
 		keyName = apiKey.Key
 
-		currentStyle := lipgloss.NewStyle().
-			Foreground(m.styles.Success).
-			Bold(true)
-		currentTime := apiKey.Current.CreatedAt.Format("2006-01-02 15:04")
+		currentHeaderStyle := lipgloss.NewStyle().
+			Background(m.styles.CurrentBg).
+			Foreground(m.styles.Base).
+			Bold(true).
+			Padding(0, 1)
+		currentTime := apiKey.Current.CreatedAt.Format("02-01-2006 15:04")
 		currentValue := apiKey.Current.Value
 		if len(currentValue) > width-16 {
 			currentValue = currentValue[:width-19] + "..."
 		}
 
 		historyEntries = append(historyEntries,
-			currentStyle.Render("Current:"),
-			m.styles.DimStyle.Render("  "+currentTime),
+			currentHeaderStyle.Render(" Current "),
+			lipgloss.NewStyle().Foreground(m.styles.Overlay0).Render("  "+currentTime),
 			lipgloss.NewStyle().Foreground(m.styles.Text).Render("  "+currentValue),
 			"",
 		)
 
 		if len(apiKey.History) > 0 {
+			previousHeaderStyle := lipgloss.NewStyle().
+				Background(m.styles.PreviousBg).
+				Foreground(m.styles.Base).
+				Bold(true).
+				Padding(0, 1)
 			historyEntries = append(historyEntries,
-				lipgloss.NewStyle().Foreground(m.styles.Overlay0).Bold(true).Render("Previous:"),
+				previousHeaderStyle.Render(" Previous "),
 			)
 
 			for i, entry := range apiKey.History {
 				if i >= 5 {
 					remaining := len(apiKey.History) - 5
 					historyEntries = append(historyEntries,
-						m.styles.DimStyle.Render(fmt.Sprintf("  + %d more entries", remaining)),
+						lipgloss.NewStyle().Foreground(m.styles.Overlay0).Render(fmt.Sprintf("  + %d more entries", remaining)),
 					)
 					break
 				}
-				entryTime := entry.CreatedAt.Format("2006-01-02 15:04")
+				entryTime := entry.CreatedAt.Format("02-01-2006 15:04")
 				entryValue := entry.Value
 				if len(entryValue) > width-16 {
 					entryValue = entryValue[:width-19] + "..."
 				}
 				historyEntries = append(historyEntries,
-					m.styles.DimStyle.Render("  "+entryTime),
-					lipgloss.NewStyle().Foreground(m.styles.Overlay0).Render("  "+entryValue),
+					lipgloss.NewStyle().Foreground(m.styles.Text).Render("  "+entryTime),
+					lipgloss.NewStyle().Foreground(m.styles.Text).Render("  "+entryValue),
 					"",
 				)
 			}
 		} else {
 			historyEntries = append(historyEntries,
-				m.styles.DimStyle.Italic(true).Render("  No previous history"),
+				lipgloss.NewStyle().Foreground(m.styles.Overlay0).Italic(true).Render("  No previous history"),
 			)
 		}
 	}
 
-	subtext := m.styles.DimStyle.Render(" Key: " + keyName)
+	subtext := lipgloss.NewStyle().
+		Foreground(m.styles.Text).
+		Render(" Key: " + lipgloss.NewStyle().Bold(true).Foreground(m.styles.Accent).Render(keyName))
 
 	historyContent := lipgloss.JoinVertical(lipgloss.Left, historyEntries...)
 

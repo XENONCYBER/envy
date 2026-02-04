@@ -30,6 +30,10 @@ type Theme struct {
 	DevBg   string `json:"dev_bg"`
 	StageBg string `json:"stage_bg"`
 
+	// History section colors
+	CurrentBg  string `json:"current_bg"`
+	PreviousBg string `json:"previous_bg"`
+
 	// Grid layout
 	GridCols        int `json:"grid_cols"`
 	GridVisibleRows int `json:"grid_visible_rows"`
@@ -58,6 +62,10 @@ func DefaultTheme() Theme {
 		ProdBg:  "#f38ba8", // Red
 		DevBg:   "#a6e3a1", // Green
 		StageBg: "#f9e2af", // Yellow
+
+		// History section backgrounds
+		CurrentBg:  "#a6e3a1", // Green
+		PreviousBg: "#f9e2af", // Yellow
 
 		// Grid layout
 		GridCols:        3,
@@ -148,6 +156,12 @@ func mergeWithDefaults(theme Theme) Theme {
 	if theme.StageBg == "" {
 		theme.StageBg = defaults.StageBg
 	}
+	if theme.CurrentBg == "" {
+		theme.CurrentBg = defaults.CurrentBg
+	}
+	if theme.PreviousBg == "" {
+		theme.PreviousBg = defaults.PreviousBg
+	}
 	if theme.GridCols == 0 {
 		theme.GridCols = defaults.GridCols
 	}
@@ -175,6 +189,10 @@ type Styles struct {
 	Warning  lipgloss.Color
 	Error    lipgloss.Color
 
+	// History section colors
+	CurrentBg  lipgloss.Color
+	PreviousBg lipgloss.Color
+
 	// Component styles
 	SearchStyle       lipgloss.Style
 	ActiveSearchStyle lipgloss.Style
@@ -196,15 +214,17 @@ type Styles struct {
 
 func NewStyles(theme Theme) Styles {
 	s := Styles{
-		Base:     lipgloss.Color(theme.Base),
-		Text:     lipgloss.Color(theme.Text),
-		Accent:   lipgloss.Color(theme.Accent),
-		Surface0: lipgloss.Color(theme.Surface0),
-		Surface1: lipgloss.Color(theme.Surface1),
-		Overlay0: lipgloss.Color(theme.Overlay0),
-		Success:  lipgloss.Color(theme.Success),
-		Warning:  lipgloss.Color(theme.Warning),
-		Error:    lipgloss.Color(theme.Error),
+		Base:       lipgloss.Color(theme.Base),
+		Text:       lipgloss.Color(theme.Text),
+		Accent:     lipgloss.Color(theme.Accent),
+		Surface0:   lipgloss.Color(theme.Surface0),
+		Surface1:   lipgloss.Color(theme.Surface1),
+		Overlay0:   lipgloss.Color(theme.Overlay0),
+		Success:    lipgloss.Color(theme.Success),
+		Warning:    lipgloss.Color(theme.Warning),
+		Error:      lipgloss.Color(theme.Error),
+		CurrentBg:  lipgloss.Color(theme.CurrentBg),
+		PreviousBg: lipgloss.Color(theme.PreviousBg),
 
 		GridCols:        theme.GridCols,
 		GridVisibleRows: theme.GridVisibleRows,

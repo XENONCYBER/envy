@@ -265,6 +265,14 @@ func extractTheme(L *lua.LState, defaults Theme) Theme {
 		config.StageBg = string(val.(lua.LString))
 	}
 
+	// History section colors
+	if val := tbl.RawGetString("current_bg"); val.Type() == lua.LTString {
+		config.CurrentBg = string(val.(lua.LString))
+	}
+	if val := tbl.RawGetString("previous_bg"); val.Type() == lua.LTString {
+		config.PreviousBg = string(val.(lua.LString))
+	}
+
 	// Grid layout
 	if val := tbl.RawGetString("grid_cols"); val.Type() == lua.LTNumber {
 		config.GridCols = int(val.(lua.LNumber))

@@ -46,6 +46,9 @@ type KeyMap struct {
 }
 
 // DefaultKeyMap returns the default keybindings
+// Case sensitive
+// Example: "ctrl+c" is different from "Ctrl+C"
+// Example: A : shift+a ,  unlike a which is just the key a
 func DefaultKeyMap() KeyMap {
 	return KeyMap{
 		// Navigation (arrows)
@@ -66,12 +69,12 @@ func DefaultKeyMap() KeyMap {
 		Quit:        "q",
 		Search:      "i",
 		Yank:        "y",
-		Create:      "ctrl+n",
+		Create:      "N",
 		Edit:        "e",
 		EditProject: "E",
-		Delete:      "d",
-		Save:        "ctrl+s",
-		Add:         "ctrl+a",
+		Delete:      "D",
+		Save:        "S",
+		Add:         "A",
 		History:     "H",
 
 		// Form navigation
